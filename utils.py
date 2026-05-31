@@ -23,14 +23,20 @@ def extract_text_from_pdf(pdf_path):
 
 
 
-def create_chunks(text, chunk_size=500):
+def create_chunks(text, chunk_size=200, overlap=50):
 
     chunks = []
 
-    for i in range(0, len(text), chunk_size):
+    start = 0
 
-        chunk = text[i:i + chunk_size]
+    while start < len(text):
+
+        end = start + chunk_size
+
+        chunk = text[start:end]
 
         chunks.append(chunk)
+
+        start += chunk_size - overlap
 
     return chunks

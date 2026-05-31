@@ -1,22 +1,15 @@
 import pickle
-
-from sentence_transformers import SentenceTransformer
+import faiss
+import numpy as np
 
 from utils import extract_text_from_pdf
 from utils import create_chunks
 
-
-# =========================
-# LOAD EMBEDDING MODEL
-# =========================
-
-embedding_model = SentenceTransformer(
-    "all-MiniLM-L6-v2"
-)
+from models import embedding_model
 
 
 # =========================
-# EXTRACT PDF TEXT
+# LOAD PDF
 # =========================
 
 pdf_path = "pranav_fusion.pdf"
@@ -30,7 +23,6 @@ text = extract_text_from_pdf(pdf_path)
 
 chunks = create_chunks(text)
 
-
 print("Total Chunks:", len(chunks))
 
 
@@ -40,24 +32,37 @@ print("Total Chunks:", len(chunks))
 
 chunk_embeddings = embedding_model.encode(chunks)
 
-
-# =========================
-# STORE DATA
-# =========================
-
-data = {
-    "chunks": chunks,
-    "embeddings": chunk_embeddings
-}
+chunk_embeddings = np.array(
+    chunk_embeddings,
+    dtype="float32"
+)
 
 
 # =========================
-# SAVE TO DISK
+# CREATE FAISS INDEX
 # =========================
 
-with open("vector_store.pkl", "wb") as file:
+dimension = chunk_embeddings.shape[1]
 
-    pickle.dump(data, file)
+index = faiss.IndexFlatL2(dimension)
+
+index.add(chunk_embeddings)
 
 
-print("Embeddings stored successfully!")
+# =========================
+# SAVE INDEX
+# =========================
+
+faiss.write_index(index, "vector.index")
+
+
+# =========================
+# SAVE CHUNKS
+# =========================
+
+with open("chunks.pkl", "wb") as file:
+
+    pickle.dump(chunks, file)
+
+
+print("FAISS index created successfully!")

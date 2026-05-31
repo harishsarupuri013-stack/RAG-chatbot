@@ -1,3 +1,9 @@
 pymupdf
 sentence-transformers
 transformers
+torch
+scikit-learn
+faiss-cpu
+flask
+numpy
+sentencepiece
