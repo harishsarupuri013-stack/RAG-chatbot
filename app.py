@@ -1,4 +1,5 @@
 from flask import Flask
+from flask import jsonify
 from flask import render_template
 from flask import request
 
@@ -8,24 +9,36 @@ from query_engine import ask_question
 app = Flask(__name__)
 
 
-@app.route("/", methods=["GET", "POST"])
+@app.route("/")
 
 def home():
 
-    answer = ""
+    return render_template("index.html")
 
-    question = ""
 
-    if request.method == "POST":
+@app.route("/ask", methods=["POST"])
 
-        question = request.form["question"]
+def ask():
 
-        answer = ask_question(question)
+    data = request.get_json(silent=True) or {}
 
-    return render_template(
-        "index.html",
-        question=question,
-        answer=answer
+    question = data.get("question", "").strip()
+
+    if not question:
+
+        return jsonify(
+            {
+                "error": "Please enter a question."
+            }
+        ), 400
+
+    answer = ask_question(question)
+
+    return jsonify(
+        {
+            "question": question,
+            "answer": answer
+        }
     )
 
 
