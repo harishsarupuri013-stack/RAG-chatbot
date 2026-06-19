@@ -1,9 +1,9 @@
 import faiss
 import pickle
 import numpy as np
+from backend.vector_store import collection
 
 from backend.models import (
-    embedding_model,
     tokenizer,
     generator_model
 )
@@ -11,71 +11,43 @@ from backend.models import (
 
 def ask_question(question):
 
-    index = faiss.read_index(
-        "storage/vector.index"
+    results = collection.query(
+        query_texts=[question],
+        n_results=5
     )
 
-    with open(
-        "storage/chunks.pkl",
-        "rb"
-    ) as file:
+    retrieved_chunks = results["documents"][0]
+    print(retrieved_chunks)
 
-        chunks = pickle.load(file)
+    context = "\n\n".join(retrieved_chunks)
 
-    question_embedding = embedding_model.encode(
-        [question]
-    )
+    return retrieved_chunks[0]
+    # prompt = f"""
+    # Answer only from the context.
 
-    question_embedding = np.array(
-        question_embedding,
-        dtype="float32"
-    )
+    # Context:
+    # {context}
 
-    top_k = 5
+    # Question:
+    # {question}
 
-    distances, indices = index.search(
-        question_embedding,
-        top_k
-    )
+    # Answer:
+    # """
 
-    retrieved_chunks = []
+    # inputs = tokenizer(
+    #     prompt,
+    #     return_tensors="pt",
+    #     truncation=True
+    # )
 
-    for idx in indices[0]:
+    # outputs = generator_model.generate(
+    #     **inputs,
+    #     max_new_tokens=150
+    # )
 
-        retrieved_chunks.append(
-            chunks[idx]
-        )
+    # answer = tokenizer.decode(
+    #     outputs[0],
+    #     skip_special_tokens=True
+    # )
 
-    context = "\n\n".join(
-        retrieved_chunks
-    )
-
-    prompt = f"""
-Answer only from the context.
-
-Context:
-{context}
-
-Question:
-{question}
-
-Answer:
-"""
-
-    inputs = tokenizer(
-        prompt,
-        return_tensors="pt",
-        truncation=True
-    )
-
-    outputs = generator_model.generate(
-        **inputs,
-        max_new_tokens=150
-    )
-
-    answer = tokenizer.decode(
-        outputs[0],
-        skip_special_tokens=True
-    )
-
-    return answer
+    # return answer
